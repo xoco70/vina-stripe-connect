@@ -45,6 +45,7 @@ class ST_Stripe_Connect_Accounts {
         }
 
         \Stripe\Stripe::setApiKey($secret_key);
+        \Stripe\Stripe::setApiVersion('2023-10-16'); // Use newer API version that supports AccountLink
     }
 
     /**
