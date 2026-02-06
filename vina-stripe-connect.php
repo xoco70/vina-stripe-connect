@@ -36,6 +36,7 @@ class ST_Stripe_Connect {
             // AJAX handlers
             add_action('wp_ajax_stripe_connect_create_account_link', [$this, 'ajax_create_account_link']);
             add_action('wp_ajax_stripe_connect_create_login_link', [$this, 'ajax_create_login_link']);
+            add_action('wp_ajax_stripe_connect_disconnect', [$this, 'ajax_disconnect_account']);
             add_action('wp_ajax_stripe_connect_confirm_payment', [$this, 'ajax_confirm_payment']);
             add_action('wp_ajax_nopriv_stripe_connect_confirm_payment', [$this, 'ajax_confirm_payment']);
 
@@ -187,6 +188,28 @@ class ST_Stripe_Connect {
         $accounts_manager = ST_Stripe_Connect_Accounts::get_instance();
 
         $result = $accounts_manager->create_login_link(get_current_user_id());
+
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    }
+
+    /**
+     * AJAX: Disconnect Stripe Connect account
+     */
+    public function ajax_disconnect_account() {
+        check_ajax_referer('stripe_connect_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'vina-stripe-connect')]);
+        }
+
+        require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-accounts.php';
+        $accounts_manager = ST_Stripe_Connect_Accounts::get_instance();
+
+        $result = $accounts_manager->disconnect_account(get_current_user_id());
 
         if ($result['success']) {
             wp_send_json_success($result);
@@ -377,6 +400,44 @@ class ST_Stripe_Connect {
                     },
                     error: function() {
                         alert('<?php _e('Erreur de connexion', 'vina-stripe-connect'); ?>');
+                        button.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
+
+            // Disconnect button handler
+            $(document).on('click', '.stripe-connect-disconnect-btn', function(e) {
+                e.preventDefault();
+
+                if (!confirm('<?php _e('Êtes-vous sûr de vouloir déconnecter votre compte Stripe ? Vous ne pourrez plus recevoir de paiements tant que vous ne reconnecterez pas un compte.', 'vina-stripe-connect'); ?>')) {
+                    return;
+                }
+
+                var button = $(this);
+                var originalText = button.html();
+                var userId = button.data('user-id');
+
+                button.prop('disabled', true).html('<?php _e('Déconnexion...', 'vina-stripe-connect'); ?>');
+
+                $.ajax({
+                    url: stripeConnectParams.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'stripe_connect_disconnect',
+                        nonce: stripeConnectParams.nonce,
+                        user_id: userId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.data.message || '<?php _e('Compte déconnecté avec succès', 'vina-stripe-connect'); ?>');
+                            window.location.reload();
+                        } else {
+                            alert(response.data.message || '<?php _e('Erreur lors de la déconnexion', 'vina-stripe-connect'); ?>');
+                            button.prop('disabled', false).html(originalText);
+                        }
+                    },
+                    error: function() {
+                        alert('<?php _e('Erreur de connexion au serveur', 'vina-stripe-connect'); ?>');
                         button.prop('disabled', false).html(originalText);
                     }
                 });

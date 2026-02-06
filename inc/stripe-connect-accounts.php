@@ -300,31 +300,27 @@ class ST_Stripe_Connect_Accounts {
     }
 
     /**
-     * Disconnect account
+     * Disconnect Stripe Connect account
      */
     public function disconnect_account($user_id) {
-        $account_id = get_user_meta($user_id, self::META_ACCOUNT_ID, true);
+        try {
+            // Delete all Stripe Connect related meta
+            delete_user_meta($user_id, self::META_ACCOUNT_ID);
+            delete_user_meta($user_id, self::META_ACCOUNT_STATUS);
+            delete_user_meta($user_id, self::META_CAPABILITIES);
+            delete_user_meta($user_id, self::META_ONBOARDING_COMPLETE);
 
-        if ($account_id) {
-            try {
-                $this->init_stripe();
+            return [
+                'success' => true,
+                'message' => __('Compte Stripe déconnecté avec succès', 'vina-stripe-connect')
+            ];
 
-                // Delete the account from Stripe
-                $account = \Stripe\Account::retrieve($account_id);
-                $account->delete();
-
-            } catch (\Stripe\Exception\ApiErrorException $e) {
-                // Continue even if deletion fails
-            }
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
         }
-
-        // Remove all meta
-        delete_user_meta($user_id, self::META_ACCOUNT_ID);
-        delete_user_meta($user_id, self::META_ACCOUNT_STATUS);
-        delete_user_meta($user_id, self::META_CAPABILITIES);
-        delete_user_meta($user_id, self::META_ONBOARDING_COMPLETE);
-
-        return true;
     }
 
     /**

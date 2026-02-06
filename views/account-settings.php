@@ -90,7 +90,7 @@ $user_id = get_current_user_id();
                 </ul>
             </div>
 
-            <div class="stripe-connect-actions" style="display: flex; gap: 15px; margin-top: 20px;">
+            <div class="stripe-connect-actions" style="display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
                 <button
                     type="button"
                     class="btn btn-primary stripe-connect-dashboard-btn"
@@ -105,6 +105,14 @@ $user_id = get_current_user_id();
                     data-user-id="<?php echo esc_attr($user_id); ?>"
                     style="background: #f6f9fc; color: #425466; border: 1px solid #c8d7e3; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 600;">
                     <?php _e('Mettre à jour les informations', 'vina-stripe-connect'); ?>
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-danger stripe-connect-disconnect-btn"
+                    data-user-id="<?php echo esc_attr($user_id); ?>"
+                    style="background: #dc3545; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                    <?php _e('Déconnecter Stripe', 'vina-stripe-connect'); ?>
                 </button>
             </div>
         </div>
