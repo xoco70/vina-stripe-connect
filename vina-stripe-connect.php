@@ -1,0 +1,347 @@
+<?php
+/**
+ * Plugin Name: Traveler Stripe Connect
+ * Plugin URI: https://vinyaqui.com/
+ * Description: Stripe Connect Express integration for Traveler Theme - Platform with 20% application fee
+ * Version: 1.0.0
+ * Author: Vinyaqui
+ * Author URI: https://vinyaqui.com/
+ * License: GPLv2 or later
+ * Text Domain: vina-stripe-connect
+ */
+
+if (!function_exists('add_action')) {
+    echo __('Hi there! I\'m just a plugin, not much I can do when called directly.', 'vina-stripe-connect');
+    exit;
+}
+
+// Plugin constants
+define('ST_STRIPE_CONNECT_VERSION', '1.0.0');
+define('ST_STRIPE_CONNECT_MINIMUM_WP_VERSION', '5.0');
+define('ST_STRIPE_CONNECT_PLUGIN_PATH', trailingslashit(plugin_dir_path(__FILE__)));
+define('ST_STRIPE_CONNECT_PLUGIN_URL', trailingslashit(plugin_dir_url(__FILE__)));
+
+class ST_Stripe_Connect {
+
+    private static $instance = null;
+
+    public function __construct() {
+        $theme = wp_get_theme();
+
+        // Check if Traveler theme is active
+        if ('Traveler' == $theme->name || 'Traveler' == $theme->parent_theme) {
+            add_action('init', [$this, 'plugin_loader'], 20);
+            add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
+
+            // AJAX handlers
+            add_action('wp_ajax_stripe_connect_create_account_link', [$this, 'ajax_create_account_link']);
+            add_action('wp_ajax_stripe_connect_create_login_link', [$this, 'ajax_create_login_link']);
+            add_action('wp_ajax_stripe_connect_confirm_payment', [$this, 'ajax_confirm_payment']);
+            add_action('wp_ajax_nopriv_stripe_connect_confirm_payment', [$this, 'ajax_confirm_payment']);
+
+            // Rewrite rules for callback
+            add_action('init', [$this, 'add_rewrite_rules']);
+            add_action('template_redirect', [$this, 'handle_callback']);
+
+            // User account page integration
+            add_action('wp', [$this, 'init_user_account_integration']);
+
+            // Activation hook
+            register_activation_hook(__FILE__, [$this, 'activate']);
+        }
+    }
+
+    /**
+     * Plugin activation
+     */
+    public function activate() {
+        // Add user meta capability for storing Stripe Connect account ID
+        // Flush rewrite rules
+        $this->add_rewrite_rules();
+        flush_rewrite_rules();
+    }
+
+    /**
+     * Add rewrite rules for callback
+     */
+    public function add_rewrite_rules() {
+        add_rewrite_rule(
+            '^stripe-connect-callback/?$',
+            'index.php?stripe_connect_callback=1',
+            'top'
+        );
+        add_rewrite_tag('%stripe_connect_callback%', '([^&]+)');
+    }
+
+    /**
+     * Handle Stripe Connect callback
+     */
+    public function handle_callback() {
+        if (get_query_var('stripe_connect_callback')) {
+            $this->process_stripe_callback();
+            exit;
+        }
+    }
+
+    /**
+     * Process Stripe Connect callback
+     */
+    private function process_stripe_callback() {
+        if (!is_user_logged_in()) {
+            wp_redirect(home_url('/mon-compte/'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+
+        // Get the account ID from URL
+        $account_id = isset($_GET['account']) ? sanitize_text_field($_GET['account']) : '';
+
+        if ($account_id) {
+            // Verify the account exists and belongs to this onboarding
+            require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-accounts.php';
+            $accounts_manager = ST_Stripe_Connect_Accounts::get_instance();
+
+            if ($accounts_manager->verify_and_save_account($user_id, $account_id)) {
+                wp_redirect(add_query_arg([
+                    'sc' => 'setting',
+                    'stripe_connect' => 'success'
+                ], home_url('/mon-compte/')));
+            } else {
+                wp_redirect(add_query_arg([
+                    'sc' => 'setting',
+                    'stripe_connect' => 'error'
+                ], home_url('/mon-compte/')));
+            }
+        } else {
+            wp_redirect(home_url('/mon-compte/?sc=setting'));
+        }
+        exit;
+    }
+
+    /**
+     * Get Stripe secret key based on mode
+     */
+    public function get_secret_key() {
+        $sandbox_mode = st()->get_option('stripe_connect_enable_sandbox', 'on');
+
+        if ($sandbox_mode === 'on') {
+            return st()->get_option('stripe_connect_test_secret_key', '');
+        } else {
+            return st()->get_option('stripe_connect_secret_key', '');
+        }
+    }
+
+    /**
+     * Get Stripe publishable key based on mode
+     */
+    public function get_publishable_key() {
+        $sandbox_mode = st()->get_option('stripe_connect_enable_sandbox', 'on');
+
+        if ($sandbox_mode === 'on') {
+            return st()->get_option('stripe_connect_test_publish_key', '');
+        } else {
+            return st()->get_option('stripe_connect_publish_key', '');
+        }
+    }
+
+    /**
+     * AJAX: Create Stripe Connect account link
+     */
+    public function ajax_create_account_link() {
+        check_ajax_referer('stripe_connect_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'vina-stripe-connect')]);
+        }
+
+        require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-accounts.php';
+        $accounts_manager = ST_Stripe_Connect_Accounts::get_instance();
+
+        $result = $accounts_manager->create_account_link(get_current_user_id());
+
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    }
+
+    /**
+     * AJAX: Create login link for dashboard access
+     */
+    public function ajax_create_login_link() {
+        check_ajax_referer('stripe_connect_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'vina-stripe-connect')]);
+        }
+
+        require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-accounts.php';
+        $accounts_manager = ST_Stripe_Connect_Accounts::get_instance();
+
+        $result = $accounts_manager->create_login_link(get_current_user_id());
+
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    }
+
+    /**
+     * AJAX: Confirm payment (for 3DS)
+     */
+    public function ajax_confirm_payment() {
+        check_ajax_referer('_wpnonce_security', '_s');
+
+        $payment_intent_id = isset($_POST['payment_intent_id']) ? sanitize_text_field($_POST['payment_intent_id']) : '';
+        $order_id = isset($_POST['st_order_id']) ? intval($_POST['st_order_id']) : 0;
+
+        if (!$payment_intent_id || !$order_id) {
+            wp_send_json_error(['message' => __('Invalid request', 'vina-stripe-connect')]);
+        }
+
+        require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-gateway.php';
+        $gateway = ST_Stripe_Connect_Payment_Gateway::instance();
+
+        $result = $gateway->confirm_payment_intent($payment_intent_id, $order_id);
+
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    }
+
+    /**
+     * Initialize user account page integration
+     */
+    public function init_user_account_integration() {
+        if (is_user_logged_in() && is_page() && isset($_GET['sc']) && $_GET['sc'] === 'setting') {
+            add_action('st_before_user_setting_content', [$this, 'render_stripe_connect_section']);
+        }
+    }
+
+    /**
+     * Render Stripe Connect section in user settings
+     */
+    public function render_stripe_connect_section() {
+        $user = wp_get_current_user();
+
+        // Only show for authors (partners)
+        if (!in_array('author', $user->roles) && !in_array('administrator', $user->roles)) {
+            return;
+        }
+
+        require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-accounts.php';
+        $accounts_manager = ST_Stripe_Connect_Accounts::get_instance();
+
+        $account_data = $accounts_manager->get_user_account(get_current_user_id());
+
+        include ST_STRIPE_CONNECT_PLUGIN_PATH . 'views/account-settings.php';
+    }
+
+    /**
+     * Enqueue scripts and styles
+     */
+    public function enqueue_scripts() {
+        if (st()->get_option('pm_gway_stripe_connect_enable') !== 'on') {
+            return;
+        }
+
+        // Stripe.js library
+        wp_register_script(
+            'stripe-connect-js-lib',
+            'https://js.stripe.com/v3/',
+            [],
+            null,
+            true
+        );
+
+        // Plugin scripts
+        wp_register_script(
+            'stripe-connect-js',
+            ST_STRIPE_CONNECT_PLUGIN_URL . 'assets/js/stripe-connect.js',
+            ['jquery', 'stripe-connect-js-lib'],
+            ST_STRIPE_CONNECT_VERSION,
+            true
+        );
+
+        // Plugin styles
+        wp_register_style(
+            'stripe-connect-css',
+            ST_STRIPE_CONNECT_PLUGIN_URL . 'assets/css/stripe-connect.css',
+            [],
+            ST_STRIPE_CONNECT_VERSION
+        );
+
+        // Localize script
+        wp_localize_script('stripe-connect-js', 'stripeConnectParams', [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'publishable_key' => $this->get_publishable_key(),
+            'nonce' => wp_create_nonce('stripe_connect_nonce'),
+            'security' => wp_create_nonce('_wpnonce_security'),
+            'home_url' => home_url('/'),
+        ]);
+
+        wp_enqueue_script('stripe-connect-js-lib');
+        wp_enqueue_script('stripe-connect-js');
+        wp_enqueue_style('stripe-connect-css');
+    }
+
+    /**
+     * Load plugin classes
+     */
+    public function plugin_loader() {
+        // Load Stripe PHP library (from vina-stripe if available, or bundled)
+        if (!class_exists('Stripe\Stripe')) {
+            if (file_exists(WP_PLUGIN_DIR . '/vina-stripe/vendor/autoload.php')) {
+                require_once WP_PLUGIN_DIR . '/vina-stripe/vendor/autoload.php';
+            } elseif (file_exists(ST_STRIPE_CONNECT_PLUGIN_PATH . 'vendor/autoload.php')) {
+                require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'vendor/autoload.php';
+            }
+        }
+
+        // Load plugin classes
+        require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-accounts.php';
+        require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-gateway.php';
+    }
+
+    /**
+     * Load template
+     */
+    public function load_template($name, $data = null) {
+        if (is_array($data)) {
+            extract($data);
+        }
+
+        $template = ST_STRIPE_CONNECT_PLUGIN_PATH . 'views/' . $name . '.php';
+
+        if (is_file($template)) {
+            $custom_template = locate_template('vina-stripe-connect/views/' . $name . '.php');
+            if (is_file($custom_template)) {
+                $template = $custom_template;
+            }
+
+            ob_start();
+            require $template;
+            return ob_get_clean();
+        }
+
+        return '';
+    }
+
+    /**
+     * Get singleton instance
+     */
+    public static function get_instance() {
+        if (is_null(self::$instance)) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+}
+
+// Initialize plugin
+ST_Stripe_Connect::get_instance();

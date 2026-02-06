@@ -1,0 +1,321 @@
+/**
+ * Stripe Connect Styles
+ */
+
+/* Card Element Container */
+.stripe-connect-card-element {
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #fff;
+    transition: border-color 0.3s;
+}
+
+.stripe-connect-card-element:hover {
+    border-color: #635bff;
+}
+
+.stripe-connect-card-element:focus-within {
+    border-color: #635bff;
+    box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
+}
+
+/* Error Messages */
+.stripe-connect-error-message {
+    color: #fa755a;
+    font-size: 14px;
+    margin-top: 10px;
+    display: none;
+}
+
+/* Info Message */
+.stripe-connect-info-message {
+    background: #f0f8ff;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 4px solid #635bff;
+    margin-bottom: 20px;
+}
+
+/* Settings Page Styles */
+.st-stripe-connect-settings {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.st-stripe-connect-settings h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 2px solid #635bff;
+    padding-bottom: 15px;
+    font-size: 22px;
+}
+
+/* Status Indicators */
+.stripe-connect-status-active {
+    border-left: 4px solid #00d924;
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.stripe-connect-status-pending {
+    border-left: 4px solid #ff9800;
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.stripe-connect-status-not-connected {
+    text-align: center;
+    padding: 30px 0;
+}
+
+/* Account Info Box */
+.stripe-connect-account-info {
+    background: #f7f9fc;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+
+.stripe-connect-account-info code {
+    background: #e3e8ef;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+/* Info Box */
+.stripe-connect-info-box {
+    background: #f0f8ff;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border-left: 4px solid #635bff;
+}
+
+.stripe-connect-info-box ul {
+    margin: 10px 0 0 0;
+    padding-left: 20px;
+    color: #666;
+    font-size: 14px;
+}
+
+.stripe-connect-info-box li {
+    margin-bottom: 8px;
+}
+
+/* Benefits Box */
+.stripe-connect-benefits {
+    background: #f7f9fc;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 30px 0;
+    text-align: left;
+}
+
+.stripe-connect-benefits h5 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.stripe-connect-benefits ul {
+    margin: 0;
+    padding-left: 25px;
+    color: #666;
+}
+
+.stripe-connect-benefits li {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+/* Buttons */
+.stripe-connect-btn {
+    background: #635bff;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.2s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.stripe-connect-btn:hover {
+    background: #5145e6;
+    transform: translateY(-1px);
+    color: white;
+    text-decoration: none;
+}
+
+.stripe-connect-btn:active {
+    transform: translateY(0);
+}
+
+.stripe-connect-btn:disabled {
+    background: #9e9e9e;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.stripe-connect-dashboard-btn {
+    background: #635bff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.stripe-connect-dashboard-btn:hover {
+    background: #5145e6;
+}
+
+.stripe-connect-refresh-btn {
+    background: #f6f9fc;
+    color: #425466;
+    border: 1px solid #c8d7e3;
+    padding: 12px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.stripe-connect-refresh-btn:hover {
+    background: #e6ebf1;
+    border-color: #a0b3c5;
+}
+
+/* Action Buttons Container */
+.stripe-connect-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+/* Alerts */
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+/* Loading State */
+.stripe-connect-btn.loading,
+.stripe-connect-dashboard-btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.stripe-connect-btn.loading:after,
+.stripe-connect-dashboard-btn.loading:after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .st-stripe-connect-settings {
+        padding: 20px;
+    }
+
+    .stripe-connect-actions {
+        flex-direction: column;
+    }
+
+    .stripe-connect-btn,
+    .stripe-connect-dashboard-btn,
+    .stripe-connect-refresh-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .stripe-connect-benefits {
+        padding: 15px;
+    }
+
+    .stripe-connect-status-not-connected {
+        padding: 20px 0;
+    }
+}
+
+/* Payment Form Specific */
+.pm-info .stripe-connect-card-info {
+    margin-bottom: 20px;
+}
+
+.stripe-connect-card-info .StripeElement {
+    padding: 12px;
+}
+
+.stripe-connect-card-info .StripeElement--focus {
+    border-color: #635bff;
+    box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
+}
+
+.stripe-connect-card-info .StripeElement--invalid {
+    border-color: #fa755a;
+}
+
+/* Icon Styles */
+.stripe-connect-icon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* Stripe Logo */
+.stripe-connect-logo {
+    height: 32px;
+    vertical-align: middle;
+}
