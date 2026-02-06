@@ -8,7 +8,7 @@
 
 ## Étape 2 : Configurer les clés API Stripe
 
-1. Aller dans **Appearance > Theme Options**
+1. Aller dans **Traveler > Theme Options**
 2. Cliquer sur l'onglet **"Payment Options"**
 3. Trouver la section **"Stripe Connect"**
 4. Configurer les paramètres :

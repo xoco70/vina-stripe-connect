@@ -34,7 +34,7 @@ Ce plugin permet aux partenaires (vignerons) de recevoir des paiements directeme
 
 1. Télécharger le plugin dans `/wp-content/plugins/vina-stripe-connect/`
 2. Activer le plugin dans WordPress
-3. Configurer les clés API Stripe dans **Theme Options > Payment Options**
+3. Configurer les clés API Stripe dans **Traveler > Theme Options > Payment Options**
 
 ## Configuration
 
@@ -46,7 +46,7 @@ Ce plugin permet aux partenaires (vignerons) de recevoir des paiements directeme
 
 ### 2. Dans WordPress
 
-Aller dans **Appearance > Theme Options > Payment Options** :
+Aller dans **Traveler > Theme Options > Payment Options** :
 
 - **Enable Stripe Connect**: ON
 - **Test Secret Key**: `sk_test_...`
