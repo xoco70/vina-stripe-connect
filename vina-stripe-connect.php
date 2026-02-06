@@ -320,7 +320,35 @@ class ST_Stripe_Connect {
             // Refresh button handler
             $(document).on('click', '.stripe-connect-refresh-btn', function(e) {
                 e.preventDefault();
-                $('.stripe-connect-btn').trigger('click');
+
+                var button = $(this);
+                var originalText = button.html();
+                var userId = button.data('user-id');
+
+                button.prop('disabled', true).html('<?php _e('Chargement...', 'vina-stripe-connect'); ?>');
+
+                $.ajax({
+                    url: stripeConnectParams.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'stripe_connect_create_account_link',
+                        nonce: stripeConnectParams.nonce,
+                        user_id: userId
+                    },
+                    success: function(response) {
+                        if (response.success && response.data && response.data.url) {
+                            window.location.href = response.data.url;
+                        } else {
+                            var errorMsg = (response.data && response.data.message) || '<?php _e('Erreur lors de la création du lien', 'vina-stripe-connect'); ?>';
+                            alert(errorMsg);
+                            button.prop('disabled', false).html(originalText);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert('<?php _e('Erreur de connexion au serveur', 'vina-stripe-connect'); ?>');
+                        button.prop('disabled', false).html(originalText);
+                    }
+                });
             });
 
             // Dashboard button handler
