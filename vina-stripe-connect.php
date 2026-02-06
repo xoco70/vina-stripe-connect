@@ -219,27 +219,63 @@ class ST_Stripe_Connect {
      */
     public function init_user_account_integration() {
         if (is_user_logged_in() && is_page() && isset($_GET['sc']) && $_GET['sc'] === 'setting') {
-            add_action('st_before_user_setting_content', [$this, 'render_stripe_connect_section']);
+            add_action('wp_footer', [$this, 'render_stripe_connect_section'], 5);
         }
     }
 
     /**
      * Render Stripe Connect section in user settings
+     * Injects via JavaScript to add after password change section
      */
     public function render_stripe_connect_section() {
         $user = wp_get_current_user();
 
-        // Only show for authors (partners)
-        if (!in_array('author', $user->roles) && !in_array('administrator', $user->roles)) {
+        // Only show for partners, authors and administrators
+        if (!in_array('partner', $user->roles) && !in_array('author', $user->roles) && !in_array('administrator', $user->roles)) {
             return;
         }
+
+        // Check if Stripe Connect is enabled
+        if (st()->get_option('pm_gway_stripe_connect_enable') !== 'on') {
+            return;
+        }
+
+        // Force enqueue scripts on this page
+        wp_enqueue_style('stripe-connect-css', ST_STRIPE_CONNECT_PLUGIN_URL . 'assets/css/stripe-connect.css', [], ST_STRIPE_CONNECT_VERSION);
 
         require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'inc/stripe-connect-accounts.php';
         $accounts_manager = ST_Stripe_Connect_Accounts::get_instance();
 
         $account_data = $accounts_manager->get_user_account(get_current_user_id());
 
+        // Define stripeConnectParams before including template
+        ?>
+        <script type="text/javascript">
+        var stripeConnectParams = {
+            ajax_url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            nonce: '<?php echo wp_create_nonce('stripe_connect_nonce'); ?>',
+            security: '<?php echo wp_create_nonce('_wpnonce_security'); ?>',
+            home_url: '<?php echo home_url('/'); ?>'
+        };
+        </script>
+        <?php
+
+        // Start output buffer
+        ob_start();
         include ST_STRIPE_CONNECT_PLUGIN_PATH . 'views/account-settings.php';
+        $html = ob_get_clean();
+
+        // Inject via JavaScript after the last .infor-st-setting
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            var stripeConnectHtml = <?php echo json_encode($html); ?>;
+
+            // Find the last .infor-st-setting div and append after it
+            $('.infor-st-setting').last().after(stripeConnectHtml);
+        });
+        </script>
+        <?php
     }
 
     /**
