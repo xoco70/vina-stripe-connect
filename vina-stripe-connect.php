@@ -149,17 +149,11 @@ class ST_Stripe_Connect {
      * AJAX: Create Stripe Connect account link
      */
     public function ajax_create_account_link() {
-        // Debug log
-        error_log('Stripe Connect: AJAX create_account_link called');
-
         check_ajax_referer('stripe_connect_nonce', 'nonce');
 
         if (!is_user_logged_in()) {
-            error_log('Stripe Connect: User not logged in');
             wp_send_json_error(['message' => __('You must be logged in.', 'vina-stripe-connect')]);
         }
-
-        error_log('Stripe Connect: User ID = ' . get_current_user_id());
 
         // Ensure Stripe library is loaded
         $this->plugin_loader();
@@ -168,8 +162,6 @@ class ST_Stripe_Connect {
         $accounts_manager = ST_Stripe_Connect_Accounts::get_instance();
 
         $result = $accounts_manager->create_account_link(get_current_user_id());
-
-        error_log('Stripe Connect: Result = ' . print_r($result, true));
 
         if ($result['success']) {
             wp_send_json_success($result);
@@ -291,67 +283,52 @@ class ST_Stripe_Connect {
             // Find the last .infor-st-setting div and append after it
             $('.infor-st-setting').last().after(stripeConnectHtml);
 
-            // Event handlers for the injected content
-            // Connect button - using event delegation for dynamically added elements
+            // Connect button handler
             $(document).on('click', '.stripe-connect-btn', function(e) {
                 e.preventDefault();
-
-                console.log('Stripe Connect: Button clicked');
-                console.log('stripeConnectParams:', stripeConnectParams);
 
                 var button = $(this);
                 var originalText = button.html();
                 var userId = button.data('user-id');
 
-                console.log('User ID:', userId);
-
                 button.prop('disabled', true).html('<?php _e('Connexion en cours...', 'vina-stripe-connect'); ?>');
-
-                var requestData = {
-                    action: 'stripe_connect_create_account_link',
-                    nonce: stripeConnectParams.nonce,
-                    user_id: userId
-                };
-
-                console.log('Request data:', requestData);
 
                 $.ajax({
                     url: stripeConnectParams.ajax_url,
                     type: 'POST',
-                    data: requestData,
+                    data: {
+                        action: 'stripe_connect_create_account_link',
+                        nonce: stripeConnectParams.nonce,
+                        user_id: userId
+                    },
                     success: function(response) {
-                        console.log('AJAX Success:', response);
-
                         if (response.success && response.data && response.data.url) {
-                            console.log('Redirecting to:', response.data.url);
                             window.location.href = response.data.url;
                         } else {
-                            console.error('Error in response:', response);
                             var errorMsg = (response.data && response.data.message) || '<?php _e('Erreur lors de la création du lien', 'vina-stripe-connect'); ?>';
                             alert(errorMsg);
                             button.prop('disabled', false).html(originalText);
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error('AJAX Error:', {xhr: xhr, status: status, error: error});
-                        console.error('Response:', xhr.responseText);
-                        alert('<?php _e('Erreur de connexion au serveur', 'vina-stripe-connect'); ?>\n\nDétails: ' + error);
+                        alert('<?php _e('Erreur de connexion au serveur', 'vina-stripe-connect'); ?>');
                         button.prop('disabled', false).html(originalText);
                     }
                 });
             });
 
-            // Refresh button - using event delegation
+            // Refresh button handler
             $(document).on('click', '.stripe-connect-refresh-btn', function(e) {
                 e.preventDefault();
                 $('.stripe-connect-btn').trigger('click');
             });
 
-            // Dashboard button - using event delegation
+            // Dashboard button handler
             $(document).on('click', '.stripe-connect-dashboard-btn', function(e) {
                 e.preventDefault();
 
                 var button = $(this);
+                var originalText = button.html();
                 button.prop('disabled', true).html('<?php _e('Chargement...', 'vina-stripe-connect'); ?>');
 
                 $.ajax({
@@ -365,15 +342,14 @@ class ST_Stripe_Connect {
                     success: function(response) {
                         if (response.success && response.data.url) {
                             window.open(response.data.url, '_blank');
-                            button.prop('disabled', false).html('<?php _e('Accéder à mon tableau de bord Stripe', 'vina-stripe-connect'); ?>');
                         } else {
                             alert(response.data.message || '<?php _e('Erreur', 'vina-stripe-connect'); ?>');
-                            button.prop('disabled', false).html('<?php _e('Accéder à mon tableau de bord Stripe', 'vina-stripe-connect'); ?>');
                         }
+                        button.prop('disabled', false).html(originalText);
                     },
                     error: function() {
                         alert('<?php _e('Erreur de connexion', 'vina-stripe-connect'); ?>');
-                        button.prop('disabled', false).html('<?php _e('Accéder à mon tableau de bord Stripe', 'vina-stripe-connect'); ?>');
+                        button.prop('disabled', false).html(originalText);
                     }
                 });
             });
@@ -431,23 +407,16 @@ class ST_Stripe_Connect {
     }
 
     /**
-     * Load plugin classes
+     * Load plugin classes and Stripe library
      */
     public function plugin_loader() {
-        // Force load vina-stripe's Stripe library (newer version)
-        // We need to load the ENTIRE library from vina-stripe, not mix with traveler-code's old version
+        // Load Stripe PHP library (use vina-stripe's newer version to avoid conflicts with traveler-code's old version)
         if (file_exists(WP_PLUGIN_DIR . '/vina-stripe/vendor/stripe/stripe-php/init.php')) {
-            // Use the init.php file which properly loads all Stripe classes
             require_once WP_PLUGIN_DIR . '/vina-stripe/vendor/stripe/stripe-php/init.php';
-            error_log('Stripe Connect: Loaded Stripe via init.php from vina-stripe');
         } elseif (file_exists(WP_PLUGIN_DIR . '/vina-stripe/vendor/autoload.php')) {
             require_once WP_PLUGIN_DIR . '/vina-stripe/vendor/autoload.php';
-            error_log('Stripe Connect: Loaded Stripe via autoload.php from vina-stripe');
         } elseif (file_exists(ST_STRIPE_CONNECT_PLUGIN_PATH . 'vendor/autoload.php')) {
             require_once ST_STRIPE_CONNECT_PLUGIN_PATH . 'vendor/autoload.php';
-            error_log('Stripe Connect: Loaded Stripe via autoload.php from vina-stripe-connect');
-        } else {
-            error_log('Stripe Connect: ERROR - No Stripe library found!');
         }
 
         // Load plugin classes

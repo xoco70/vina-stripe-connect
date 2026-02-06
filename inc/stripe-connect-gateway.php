@@ -261,6 +261,10 @@ if (!class_exists('ST_Stripe_Connect_Payment_Gateway') && class_exists('STAbstac
                     ),
                     'confirmation_method' => 'manual',
                     'confirm' => true,
+                    'return_url' => add_query_arg([
+                        'order_id' => $order_id,
+                        'payment_intent' => '{PAYMENT_INTENT_ID}',
+                    ], home_url('/checkout/')),
                     'metadata' => [
                         'order_id' => $order_id,
                         'booking_id' => $st_booking_id,

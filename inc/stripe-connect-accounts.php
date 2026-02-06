@@ -14,12 +14,12 @@ class ST_Stripe_Connect_Accounts {
     private static $instance = null;
 
     /**
-     * User meta key for storing Stripe account ID
+     * User meta keys for storing Stripe Connect data
      */
-    const META_ACCOUNT_ID = 'stripe_connect_account_id';
-    const META_ACCOUNT_STATUS = 'stripe_connect_status';
-    const META_CAPABILITIES = 'stripe_connect_capabilities';
-    const META_ONBOARDING_COMPLETE = 'stripe_connect_onboarding_complete';
+    private const META_ACCOUNT_ID = 'stripe_connect_account_id';
+    private const META_ACCOUNT_STATUS = 'stripe_connect_status';
+    private const META_CAPABILITIES = 'stripe_connect_capabilities';
+    private const META_ONBOARDING_COMPLETE = 'stripe_connect_onboarding_complete';
 
     /**
      * Get Stripe API key
@@ -37,6 +37,9 @@ class ST_Stripe_Connect_Accounts {
     /**
      * Initialize Stripe with API key
      */
+    /**
+     * Initialize Stripe with API keys
+     */
     private function init_stripe() {
         $secret_key = $this->get_stripe_secret_key();
 
@@ -45,7 +48,7 @@ class ST_Stripe_Connect_Accounts {
         }
 
         \Stripe\Stripe::setApiKey($secret_key);
-        \Stripe\Stripe::setApiVersion('2023-10-16'); // Use newer API version that supports AccountLink
+        \Stripe\Stripe::setApiVersion('2023-10-16');
     }
 
     /**
