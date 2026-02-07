@@ -57,18 +57,28 @@ class ST_Stripe_Connect_Accounts {
     public function get_or_create_account($user_id) {
         $account_id = get_user_meta($user_id, self::META_ACCOUNT_ID, true);
 
-        // If account exists, return it
+        // If account exists, return it (even if disconnected - we'll reuse it)
         if ($account_id) {
             try {
                 $this->init_stripe();
                 $account = \Stripe\Account::retrieve($account_id);
+
+                // Reactivate the account by updating status
+                update_user_meta($user_id, self::META_ACCOUNT_STATUS, 'pending');
+
+                // Update onboarding status based on Stripe account state
+                if ($account->charges_enabled) {
+                    update_user_meta($user_id, self::META_ACCOUNT_STATUS, 'active');
+                    update_user_meta($user_id, self::META_ONBOARDING_COMPLETE, true);
+                }
+
                 return [
                     'success' => true,
                     'account_id' => $account_id,
                     'account' => $account
                 ];
             } catch (\Stripe\Exception\ApiErrorException $e) {
-                // Account doesn't exist anymore, create a new one
+                // Account doesn't exist anymore on Stripe, create a new one
                 delete_user_meta($user_id, self::META_ACCOUNT_ID);
                 delete_user_meta($user_id, self::META_ACCOUNT_STATUS);
             }
@@ -200,12 +210,26 @@ class ST_Stripe_Connect_Accounts {
      */
     public function get_user_account($user_id) {
         $account_id = get_user_meta($user_id, self::META_ACCOUNT_ID, true);
+        $status = get_user_meta($user_id, self::META_ACCOUNT_STATUS, true);
 
         if (!$account_id) {
             return [
                 'connected' => false,
                 'account_id' => null,
                 'status' => 'not_connected'
+            ];
+        }
+
+        // If account is marked as disconnected, show as not connected
+        // (but keep the account_id so it can be reused when reconnecting)
+        if ($status === 'disconnected') {
+            return [
+                'connected' => false,
+                'account_id' => $account_id, // Keep this for reuse
+                'status' => 'disconnected',
+                'charges_enabled' => false,
+                'payouts_enabled' => false,
+                'details_submitted' => false,
             ];
         }
 
@@ -216,7 +240,7 @@ class ST_Stripe_Connect_Accounts {
             return [
                 'connected' => true,
                 'account_id' => $account_id,
-                'status' => get_user_meta($user_id, self::META_ACCOUNT_STATUS, true),
+                'status' => $status,
                 'onboarding_complete' => get_user_meta($user_id, self::META_ONBOARDING_COMPLETE, true),
                 'charges_enabled' => $account->charges_enabled,
                 'payouts_enabled' => $account->payouts_enabled,
@@ -301,14 +325,18 @@ class ST_Stripe_Connect_Accounts {
 
     /**
      * Disconnect Stripe Connect account
+     * Note: This marks the account as disconnected but keeps the account ID
+     * so it can be reused when the user reconnects (no need to redo onboarding)
      */
     public function disconnect_account($user_id) {
         try {
-            // Delete all Stripe Connect related meta
-            delete_user_meta($user_id, self::META_ACCOUNT_ID);
-            delete_user_meta($user_id, self::META_ACCOUNT_STATUS);
+            // Keep the account ID but mark as disconnected
+            // This allows reusing the same account when reconnecting
+            update_user_meta($user_id, self::META_ACCOUNT_STATUS, 'disconnected');
+            update_user_meta($user_id, self::META_ONBOARDING_COMPLETE, false);
+
+            // Clear capabilities cache (will be refreshed on reconnect)
             delete_user_meta($user_id, self::META_CAPABILITIES);
-            delete_user_meta($user_id, self::META_ONBOARDING_COMPLETE);
 
             return [
                 'success' => true,
