@@ -212,7 +212,10 @@ class ST_Stripe_Connect_Accounts {
         $account_id = get_user_meta($user_id, self::META_ACCOUNT_ID, true);
         $status = get_user_meta($user_id, self::META_ACCOUNT_STATUS, true);
 
+        error_log('[Stripe Connect] get_user_account called for user ' . $user_id . ' - account_id: ' . $account_id . ' - status: ' . $status);
+
         if (!$account_id) {
+            error_log('[Stripe Connect] No account_id found in user meta');
             return [
                 'connected' => false,
                 'account_id' => null,
@@ -237,6 +240,8 @@ class ST_Stripe_Connect_Accounts {
             $this->init_stripe();
             $account = \Stripe\Account::retrieve($account_id);
 
+            error_log('[Stripe Connect] Account retrieved - charges_enabled: ' . ($account->charges_enabled ? 'true' : 'false'));
+
             return [
                 'connected' => true,
                 'account_id' => $account_id,
@@ -249,13 +254,33 @@ class ST_Stripe_Connect_Accounts {
             ];
 
         } catch (\Stripe\Exception\ApiErrorException $e) {
-            // Account not found or error
-            delete_user_meta($user_id, self::META_ACCOUNT_ID);
-            delete_user_meta($user_id, self::META_ACCOUNT_STATUS);
+            error_log('[Stripe Connect] API ERROR in get_user_account: ' . $e->getMessage());
+
+            // Only delete meta if account truly doesn't exist (404)
+            // Don't delete on temporary errors (network, rate limit, etc.)
+            if ($e->getHttpStatus() === 404) {
+                delete_user_meta($user_id, self::META_ACCOUNT_ID);
+                delete_user_meta($user_id, self::META_ACCOUNT_STATUS);
+            }
+
+            // Fall back to saved meta data instead of returning not connected
+            if ($status === 'active') {
+                return [
+                    'connected' => true,
+                    'account_id' => $account_id,
+                    'status' => $status,
+                    'onboarding_complete' => get_user_meta($user_id, self::META_ONBOARDING_COMPLETE, true),
+                    'charges_enabled' => true,
+                    'payouts_enabled' => false,
+                    'details_submitted' => true,
+                    'email' => '',
+                    'error' => $e->getMessage()
+                ];
+            }
 
             return [
                 'connected' => false,
-                'account_id' => null,
+                'account_id' => $account_id,
                 'status' => 'error',
                 'error' => $e->getMessage()
             ];

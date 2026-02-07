@@ -108,6 +108,14 @@ if (!class_exists('ST_Stripe_Connect_Payment_Gateway') && class_exists('STAbstac
                     'desc' => __('Your Stripe Platform Test Secret Key', 'vina-stripe-connect'),
                     'condition' => 'pm_gway_stripe_connect_enable:is(on),stripe_connect_enable_sandbox:is(on)'
                 ],
+                [
+                    'id' => 'stripe_connect_return_url',
+                    'label' => __('Return Url (Required)', 'vina-stripe-connect'),
+                    'type' => 'text',
+                    'section' => 'option_pmgateway',
+                    'desc' => __('You must enter the return url, mostly your domain. Such as https://travelerwp.com/', 'vina-stripe-connect'),
+                    'condition' => 'pm_gway_stripe_connect_enable:is(on)'
+                ],
             ];
         }
 
@@ -261,10 +269,7 @@ if (!class_exists('ST_Stripe_Connect_Payment_Gateway') && class_exists('STAbstac
                     ),
                     'confirmation_method' => 'manual',
                     'confirm' => true,
-                    'return_url' => add_query_arg([
-                        'order_id' => $order_id,
-                        'payment_intent' => '{PAYMENT_INTENT_ID}',
-                    ], home_url('/checkout/')),
+                    'return_url' => esc_url(!empty(st()->get_option('stripe_connect_return_url')) ? st()->get_option('stripe_connect_return_url') : get_home_url()),
                     'metadata' => [
                         'order_id' => $order_id,
                         'booking_id' => $st_booking_id,
