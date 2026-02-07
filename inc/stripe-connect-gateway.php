@@ -491,7 +491,7 @@ if (!class_exists('ST_Stripe_Connect_Payment_Gateway') && class_exists('STAbstac
          * Get gateway name
          */
         public function get_name() {
-            return __('Stripe Connect (Partners)', 'vina-stripe-connect');
+            return __('Stripe Connect', 'vina-stripe-connect');
         }
 
         /**

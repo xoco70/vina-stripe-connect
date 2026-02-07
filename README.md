@@ -67,7 +67,7 @@ Aller dans **Traveler > Theme Options > Payment Options** :
 
 1. Choisir une activité
 2. Remplir les informations de réservation
-3. Sélectionner "Stripe Connect (Partners)" comme moyen de paiement
+3. Sélectionner "Stripe Connect" comme moyen de paiement
 4. Entrer les informations de carte
 5. Valider le paiement
 

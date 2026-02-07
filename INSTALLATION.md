@@ -71,7 +71,7 @@ Test Mode (pour les tests) :
 3. Aller sur l'activité créée
 4. Cliquer sur **"Book Now"**
 5. Remplir les informations de réservation
-6. Choisir **"Stripe Connect (Partners)"** comme moyen de paiement
+6. Choisir **"Stripe Connect"** comme moyen de paiement
 
 ### 5.2 Carte de test
 
