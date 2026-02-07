@@ -20,10 +20,9 @@ $publishable_key = ST_Stripe_Connect::get_instance()->get_publishable_key();
         <div class="col-sm-12">
             <div class="stripe-connect-info-message" style="background: #f0f8ff; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
                 <p style="margin: 0; color: #0066cc;">
-                    <strong><?php _e('Paiement sécurisé via Stripe Connect', 'vina-stripe-connect'); ?></strong>
+                    <strong><?php _e('Paiement sécurisé via Stripe', 'vina-stripe-connect'); ?></strong>
                 </p>
                 <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">
-                    <?php _e('Votre paiement sera traité de manière sécurisée. Le vigneron recevra directement 80% du montant.', 'vina-stripe-connect'); ?>
                 </p>
             </div>
 
